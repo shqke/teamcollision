@@ -5,7 +5,7 @@ on:
     paths-ignore:
     - LICENSE
     - README.md
-    branches: master
+    branches: main
 
 jobs:
   build:
