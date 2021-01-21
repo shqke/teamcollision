@@ -1,0 +1,14 @@
+# vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
+import os.path
+
+project = Extension.HL2Project(builder, 'teamcollision.ext')
+project.sources += [
+  'extension.cpp',
+  os.path.join('smsdk', 'smsdk_ext.cpp'),
+]
+  
+for sdk_name in Extension.sdks:
+  sdk = Extension.sdks[sdk_name]
+  Extension.HL2Config(project, 'teamcollision.ext.' + sdk.ext, sdk)
+
+Extension.extensions = builder.Add(project)

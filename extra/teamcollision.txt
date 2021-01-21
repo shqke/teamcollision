@@ -1,0 +1,20 @@
+"Games"
+{
+	"left4dead2"
+	{
+		"Offsets"
+		{
+			"CBasePlayer::PlayerSolidMask"
+			{
+				"linux"		"488"
+				"windows"	"489"
+			}
+
+			"CGameMovement::PlayerSolidMask"
+			{
+				"linux"		"16"
+				"windows"	"17"
+			}
+		}
+	}
+}
