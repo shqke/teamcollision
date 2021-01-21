@@ -7,7 +7,7 @@
 #define SMEXT_CONF_AUTHOR		"shqke"
 #define SMEXT_CONF_URL			"https://github.com/shqke/teamcollision"
 #define SMEXT_CONF_LOGTAG		"teamcollision"
-#define SMEXT_CONF_LICENSE		"MIT"
+#define SMEXT_CONF_LICENSE		"GPL"
 #define SMEXT_CONF_DATESTRING	__DATE__
 
 #define GAMEDATA_FILE			"teamcollision"
