@@ -34,13 +34,6 @@ public:
 		return (*(int*)((byte*)(this) + CBasePlayer::sendprop_m_fFlags) & FL_FAKECLIENT) != 0;
 	}
 
-	static int sendprop_m_isGhost;
-
-	bool IsGhost()
-	{
-		return *(bool*)((byte*)(this) + CBasePlayer::sendprop_m_isGhost);
-	}
-
 	static int sendprop_m_carryVictim;
 
 	CBasePlayer* GetCarryVictim()

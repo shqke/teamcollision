@@ -14,7 +14,6 @@ IServerGameEnts* gameents = NULL;
 
 int CBaseEntity::vtblindex_ShouldCollide = 0;
 int CBasePlayer::sendprop_m_fFlags = 0;
-int CBasePlayer::sendprop_m_isGhost = 0;
 int CBasePlayer::sendprop_m_carryVictim = 0;
 int CBasePlayer::sendprop_m_jockeyAttacker = 0;
 int CBasePlayer::vtblindex_PlayerSolidMask = 0;
@@ -179,14 +178,6 @@ bool CTeamCollision::SDK_OnLoad(char* error, size_t maxlength, bool late)
 		return false;
 	}
 
-	CTerrorPlayer::sendprop_m_isGhost = info.actual_offset;
-
-	if (!gamehelpers->FindSendPropInfo("CTerrorPlayer", "m_carryVictim", &info)) {
-		ke::SafeStrcpy(error, maxlength, "Unable to find SendProp \"CTerrorPlayer::m_carryVictim\"");
-
-		return false;
-	}
-
 	CTerrorPlayer::sendprop_m_carryVictim = info.actual_offset;
 
 	if (!gamehelpers->FindSendPropInfo("CTerrorPlayer", "m_jockeyAttacker", &info)) {
@@ -277,7 +268,7 @@ void CTeamCollision::SDK_OnAllLoaded()
 	for (auto&& el : s_entities) {
 		CBaseEntity* pEntity = static_cast<CBaseEntity*>(servertools->CreateEntityByName(el.className));
 		if (pEntity == NULL) {
-			smutils->LogError(myself, "Unable to create an \"%s\" entity to hook \"ShouldCollide\" on!");
+			smutils->LogError(myself, "Unable to create an entity \"%s\" to hook \"ShouldCollide\" on!", el.className);
 
 			return;
 		}
