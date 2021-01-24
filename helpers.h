@@ -4,16 +4,23 @@
 #include "smsdk_ext.h"
 #include <extensions/IBinTools.h>
 
+// iclientrenderable.h (included in toolframework/itoolentity.h) has explicit NULL-dereference in CDefaultClientRenderable::GetRefEHandle
+// Don't need to add compiler option -Wnull-dereference if can just ignore this file alone
+#define ICLIENTRENDERABLE_H
+class IClientRenderable;
+typedef unsigned short ClientShadowHandle_t;
+#include <toolframework/itoolentity.h>
+
+#define TEAM_SURVIVOR           2
+#define TEAM_INFECTED           3
+#define TEAM_L4D1SURVIVOR       4
+
+extern IServerGameEnts* gameents;
+
 class CBaseEntity
 {
 public:
-	static int sendprop_m_iTeamNum;
 	static int vtblindex_ShouldCollide;
-
-	int GetTeamNumber()
-	{
-		return *(int*)((byte*)(this) + CBaseEntity::sendprop_m_iTeamNum);
-	}
 };
 
 class CBasePlayer :
@@ -48,12 +55,7 @@ public:
 			return NULL;
 		}
 
-		IServerUnknown* pUnknown = pEdict->GetUnknown();
-		if (pUnknown == NULL) {
-			return NULL;
-		}
-
-		return (CBasePlayer*)pUnknown->GetBaseEntity();
+		return (CBasePlayer*)gameents->EdictToBaseEntity(pEdict);
 	}
 
 	static int sendprop_m_jockeyAttacker;
@@ -70,12 +72,7 @@ public:
 			return NULL;
 		}
 
-		IServerUnknown* pUnknown = pEdict->GetUnknown();
-		if (pUnknown == NULL) {
-			return NULL;
-		}
-
-		return (CBasePlayer*)pUnknown->GetBaseEntity();
+		return (CBasePlayer*)gameents->EdictToBaseEntity(pEdict);
 	}
 
 	static int vtblindex_PlayerSolidMask;

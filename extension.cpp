@@ -12,7 +12,6 @@ CGameMovement* g_pGameMovement = NULL;
 IServerTools* servertools = NULL;
 IServerGameEnts* gameents = NULL;
 
-int CBaseEntity::sendprop_m_iTeamNum = 0;
 int CBaseEntity::vtblindex_ShouldCollide = 0;
 int CBasePlayer::sendprop_m_fFlags = 0;
 int CBasePlayer::sendprop_m_isGhost = 0;
@@ -124,17 +123,7 @@ void CTeamCollision::OnClientPutInServer(int client)
 		return;
 	}
 
-	edict_t* pEdict = pGamePlayer->GetEdict();
-	if (pEdict == NULL) {
-		return;
-	}
-
-	IServerUnknown* pUnknown = pEdict->GetUnknown();
-	if (pUnknown == NULL) {
-		return;
-	}
-
-	CBaseEntity* pEntity = pUnknown->GetBaseEntity();
+	CBaseEntity* pEntity = gameents->EdictToBaseEntity(pGamePlayer->GetEdict());
 	if (pEntity == NULL) {
 		return;
 	}
@@ -149,17 +138,7 @@ void CTeamCollision::OnClientDisconnecting(int client)
 		return;
 	}
 
-	edict_t* pEdict = pGamePlayer->GetEdict();
-	if (pEdict == NULL) {
-		return;
-	}
-
-	IServerUnknown* pUnknown = pEdict->GetUnknown();
-	if (pUnknown == NULL) {
-		return;
-	}
-
-	CBaseEntity* pEntity = pUnknown->GetBaseEntity();
+	CBaseEntity* pEntity = gameents->EdictToBaseEntity(pGamePlayer->GetEdict());
 	if (pEntity == NULL) {
 		return;
 	}
@@ -249,7 +228,7 @@ void CTeamCollision::SDK_OnUnload()
 			continue;
 		}
 
-		OnClientDisconnected(i);
+		OnClientDisconnecting(i);
 	}
 
 	playerhelpers->RemoveClientListener(this);
@@ -304,8 +283,11 @@ void CTeamCollision::SDK_OnAllLoaded()
 		}
 
 		el.hookId = SH_ADD_MANUALVPHOOK(CBaseEntity_ShouldCollide, pEntity, SH_MEMBER(this, &CTeamCollision::Handler_CEnvBlocker_ShouldCollide), false);
-
-		engine->RemoveEdict(gameents->BaseEntityToEdict(pEntity));
+		
+		edict_t* pEdict = gameents->BaseEntityToEdict(pEntity);
+		if (pEdict != NULL) {
+			engine->RemoveEdict(pEdict);
+		}
 	}
 
 	shookid_CGameMovement_PlayerSolidMask = SH_ADD_MANUALHOOK(CGameMovement_PlayerSolidMask, g_pGameMovement, SH_MEMBER(this, &CTeamCollision::Handler_CTerrorGameMovement_PlayerSolidMask), true);

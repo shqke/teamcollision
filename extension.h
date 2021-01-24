@@ -8,17 +8,6 @@
 #include <extensions/IBinTools.h>
 #include <amtl/am-string.h>
 
-// iclientrenderable.h (included in toolframework/itoolentity.h) has explicit NULL-dereference in CDefaultClientRenderable::GetRefEHandle
-// Don't need to add compiler option -Wnull-dereference if can just ignore this file alone
-#define ICLIENTRENDERABLE_H
-class IClientRenderable;
-typedef unsigned short ClientShadowHandle_t;
-#include <toolframework/itoolentity.h>
-
-#define TEAM_SURVIVOR           2
-#define TEAM_INFECTED           3
-#define TEAM_L4D1SURVIVOR       4
-
 class CTeamCollision :
 	public SDKExtension,
 	public IClientListener
