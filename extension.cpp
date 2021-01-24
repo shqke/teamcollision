@@ -172,8 +172,8 @@ bool CTeamCollision::SDK_OnLoad(char* error, size_t maxlength, bool late)
 
 	CBasePlayer::sendprop_m_fFlags = info.actual_offset;
 
-	if (!gamehelpers->FindSendPropInfo("CTerrorPlayer", "m_isGhost", &info)) {
-		ke::SafeStrcpy(error, maxlength, "Unable to find SendProp \"CTerrorPlayer::m_isGhost\"");
+	if (!gamehelpers->FindSendPropInfo("CTerrorPlayer", "m_carryVictim", &info)) {
+		ke::SafeStrcpy(error, maxlength, "Unable to find SendProp \"CTerrorPlayer::m_carryVictim\"");
 
 		return false;
 	}
