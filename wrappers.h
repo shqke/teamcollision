@@ -1,5 +1,5 @@
-#ifndef _INCLUDE_HELPERS_H_
-#define _INCLUDE_HELPERS_H_
+#ifndef _INCLUDE_WRAPPERS_H_
+#define _INCLUDE_WRAPPERS_H_
 
 #include "smsdk_ext.h"
 #include <extensions/IBinTools.h>
@@ -102,4 +102,4 @@ public:
 
 #define INTERFACENAME_GAMEMOVEMENT	"GameMovement001"
 
-#endif // _INCLUDE_HELPERS_H_
+#endif // _INCLUDE_WRAPPERS_H_

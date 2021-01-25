@@ -2,7 +2,7 @@
 #define _INCLUDE_EXTENSION_PROPER_H_
 
 #include "smsdk_ext.h"
-#include "helpers.h"
+#include "wrappers.h"
 
 #include <sourcehook.h>
 #include <extensions/IBinTools.h>
