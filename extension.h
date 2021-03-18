@@ -12,9 +12,6 @@ class CTeamCollision :
 	public SDKExtension,
 	public IClientListener
 {
-public:
-	CTeamCollision();
-
 public: // SourceHook callbacks
 	unsigned int Handler_CTerrorPlayer_PlayerSolidMask(bool brushOnly);
 	unsigned int Handler_CTerrorGameMovement_PlayerSolidMask(bool brushOnly, CBasePlayer* testPlayer);
@@ -22,11 +19,6 @@ public: // SourceHook callbacks
 
 protected:
 	bool SetupFromGameConfigs(char* error, int maxlength);
-
-protected:
-	int shookid_CGameMovement_PlayerSolidMask;
-	int shookid_CEnv_Blocker_ShouldCollide;
-	int shookid_CEnvPhysicsBlocker_ShouldCollide;
 
 public:
 	/**

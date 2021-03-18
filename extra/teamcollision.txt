@@ -7,7 +7,7 @@
 			"CBasePlayer::PlayerSolidMask"
 			{
 				"linux"		"488"
-				"windows"	"489"
+				"windows"	"487"
 			}
 
 			"CGameMovement::PlayerSolidMask"

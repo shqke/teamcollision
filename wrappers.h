@@ -11,16 +11,32 @@ class IClientRenderable;
 typedef unsigned short ClientShadowHandle_t;
 #include <toolframework/itoolentity.h>
 
-#define TEAM_SURVIVOR           2
-#define TEAM_INFECTED           3
-#define TEAM_L4D1SURVIVOR       4
-
 extern IServerGameEnts* gameents;
 
-class CBaseEntity
+class CBaseEntity :
+	public IServerEntity
 {
 public:
 	static int vtblindex_ShouldCollide;
+
+	edict_t* edict()
+	{
+		return gameents->BaseEntityToEdict(this);
+	}
+};
+
+class CEnv_Blocker :
+	public CBaseEntity
+{
+public:
+	static int shookid_ShouldCollide;
+};
+
+class CEnvPhysicsBlocker :
+	public CBaseEntity
+{
+public:
+	static int shookid_ShouldCollide;
 };
 
 class CBasePlayer :
@@ -29,47 +45,19 @@ class CBasePlayer :
 public:
 	static int sendprop_m_fFlags;
 
+	static int vtblindex_PlayerSolidMask;
+
+	static ICallWrapper* vcall_PlayerSolidMask;
+
+	int GetFlags()
+	{
+		return *(int*)((byte*)(this) + CBasePlayer::sendprop_m_fFlags);
+	}
+
 	bool IsBot()
 	{
-		return (*(int*)((byte*)(this) + CBasePlayer::sendprop_m_fFlags) & FL_FAKECLIENT) != 0;
+		return (GetFlags() & FL_FAKECLIENT) != 0;
 	}
-
-	static int sendprop_m_carryVictim;
-
-	CBasePlayer* GetCarryVictim()
-	{
-		edict_t* pEdict = gamehelpers->GetHandleEntity(*(CBaseHandle*)((byte*)(this) + CBasePlayer::sendprop_m_carryVictim));
-		if (pEdict == NULL) {
-			return NULL;
-		}
-
-		// Make sure it's a player
-		if (engine->GetPlayerUserId(pEdict) == -1) {
-			return NULL;
-		}
-
-		return (CBasePlayer*)gameents->EdictToBaseEntity(pEdict);
-	}
-
-	static int sendprop_m_jockeyAttacker;
-
-	CBasePlayer* GetJockeyAttacker()
-	{
-		edict_t* pEdict = gamehelpers->GetHandleEntity(*(CBaseHandle*)((byte*)(this) + CBasePlayer::sendprop_m_jockeyAttacker));
-		if (pEdict == NULL) {
-			return NULL;
-		}
-
-		// Make sure it's a player
-		if (engine->GetPlayerUserId(pEdict) == -1) {
-			return NULL;
-		}
-
-		return (CBasePlayer*)gameents->EdictToBaseEntity(pEdict);
-	}
-
-	static int vtblindex_PlayerSolidMask;
-	static ICallWrapper* vcall_PlayerSolidMask;
 
 	unsigned int PlayerSolidMask(bool brushOnly)
 	{
@@ -89,12 +77,57 @@ class CTerrorPlayer :
 	public CBasePlayer
 {
 public:
+	static int sendprop_m_carryVictim;
+	static int sendprop_m_jockeyAttacker;
+
+	CTerrorPlayer* GetCarryVictim()
+	{
+		edict_t* pEdict = gamehelpers->GetHandleEntity(*(CBaseHandle*)((byte*)(this) + CTerrorPlayer::sendprop_m_carryVictim));
+		if (pEdict == NULL) {
+			return NULL;
+		}
+
+		// Make sure it's a player
+		if (engine->GetPlayerUserId(pEdict) == -1) {
+			return NULL;
+		}
+
+		return (CTerrorPlayer*)gameents->EdictToBaseEntity(pEdict);
+	}
+
+	CTerrorPlayer* GetJockeyAttacker()
+	{
+		edict_t* pEdict = gamehelpers->GetHandleEntity(*(CBaseHandle*)((byte*)(this) + CTerrorPlayer::sendprop_m_jockeyAttacker));
+		if (pEdict == NULL) {
+			return NULL;
+		}
+
+		// Make sure it's a player
+		if (engine->GetPlayerUserId(pEdict) == -1) {
+			return NULL;
+		}
+
+		return (CTerrorPlayer*)gameents->EdictToBaseEntity(pEdict);
+	}
 };
+
+CBasePlayer* UTIL_PlayerByIndex(int playerIndex)
+{
+	if (playerIndex > 0 && playerIndex <= playerhelpers->GetMaxClients()) {
+		IGamePlayer* pPlayer = playerhelpers->GetGamePlayer(playerIndex);
+		if (pPlayer != NULL) {
+			return (CBasePlayer*)gameents->EdictToBaseEntity(pPlayer->GetEdict());
+		}
+	}
+
+	return NULL;
+}
 
 class CGameMovement
 {
 public:
 	static int vtblindex_PlayerSolidMask;
+	static int shookid_PlayerSolidMask;
 
 	virtual unsigned int PlayerSolidMask(bool brushOnly = false, CBasePlayer* testPlayer = NULL) const;	///< returns the solid mask for the given player, so bots can have a more-restrictive set
 	CBasePlayer* player;

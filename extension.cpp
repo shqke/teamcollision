@@ -12,26 +12,22 @@ CGameMovement* g_pGameMovement = NULL;
 IServerTools* servertools = NULL;
 IServerGameEnts* gameents = NULL;
 
-int CBaseEntity::vtblindex_ShouldCollide = 0;
 int CBasePlayer::sendprop_m_fFlags = 0;
-int CBasePlayer::sendprop_m_carryVictim = 0;
-int CBasePlayer::sendprop_m_jockeyAttacker = 0;
+int CTerrorPlayer::sendprop_m_carryVictim = 0;
+int CTerrorPlayer::sendprop_m_jockeyAttacker = 0;
+int CBaseEntity::vtblindex_ShouldCollide = 0;
 int CBasePlayer::vtblindex_PlayerSolidMask = 0;
-ICallWrapper* CBasePlayer::vcall_PlayerSolidMask = NULL;
 int CGameMovement::vtblindex_PlayerSolidMask = 0;
-
-CTeamCollision::CTeamCollision()
-{
-	shookid_CGameMovement_PlayerSolidMask = 0;
-	shookid_CEnv_Blocker_ShouldCollide = 0;
-	shookid_CEnvPhysicsBlocker_ShouldCollide = 0;
-}
+ICallWrapper* CBasePlayer::vcall_PlayerSolidMask = NULL;
+int CEnv_Blocker::shookid_ShouldCollide = 0;
+int CEnvPhysicsBlocker::shookid_ShouldCollide = 0;
+int CGameMovement::shookid_PlayerSolidMask = 0;
 
 unsigned int CTeamCollision::Handler_CTerrorPlayer_PlayerSolidMask(bool brushOnly)
 {
-	CBasePlayer* _this = META_IFACEPTR(CBasePlayer);
+	CTerrorPlayer* _this = META_IFACEPTR(CTerrorPlayer);
 
-	CBasePlayer* pVictim = _this->GetCarryVictim();
+	CTerrorPlayer* pVictim = _this->GetCarryVictim();
 	if (pVictim == NULL) {
 		pVictim = _this->GetJockeyAttacker();
 	}
@@ -117,32 +113,22 @@ bool CTeamCollision::SetupFromGameConfigs(char* error, int maxlength)
 
 void CTeamCollision::OnClientPutInServer(int client)
 {
-	IGamePlayer* pGamePlayer = playerhelpers->GetGamePlayer(client);
-	if (pGamePlayer == NULL) {
+	CBasePlayer* pPlayer = UTIL_PlayerByIndex(client);
+	if (pPlayer == NULL) {
 		return;
 	}
 
-	CBaseEntity* pEntity = gameents->EdictToBaseEntity(pGamePlayer->GetEdict());
-	if (pEntity == NULL) {
-		return;
-	}
-
-	SH_ADD_MANUALHOOK(CBasePlayer_PlayerSolidMask, pEntity, SH_MEMBER(this, &CTeamCollision::Handler_CTerrorPlayer_PlayerSolidMask), true);
+	SH_ADD_MANUALHOOK(CBasePlayer_PlayerSolidMask, pPlayer, SH_MEMBER(this, &CTeamCollision::Handler_CTerrorPlayer_PlayerSolidMask), true);
 }
 
 void CTeamCollision::OnClientDisconnecting(int client)
 {
-	IGamePlayer* pGamePlayer = playerhelpers->GetGamePlayer(client);
-	if (pGamePlayer == NULL) {
+	CBasePlayer* pPlayer = UTIL_PlayerByIndex(client);
+	if (pPlayer == NULL) {
 		return;
 	}
 
-	CBaseEntity* pEntity = gameents->EdictToBaseEntity(pGamePlayer->GetEdict());
-	if (pEntity == NULL) {
-		return;
-	}
-
-	SH_REMOVE_MANUALHOOK(CBasePlayer_PlayerSolidMask, pEntity, SH_MEMBER(this, &CTeamCollision::Handler_CTerrorPlayer_PlayerSolidMask), true);
+	SH_REMOVE_MANUALHOOK(CBasePlayer_PlayerSolidMask, pPlayer, SH_MEMBER(this, &CTeamCollision::Handler_CTerrorPlayer_PlayerSolidMask), true);
 }
 
 void CTeamCollision::OnServerActivated(int maxClients)
@@ -224,19 +210,22 @@ void CTeamCollision::SDK_OnUnload()
 
 	playerhelpers->RemoveClientListener(this);
 
-	SH_REMOVE_HOOK_ID(shookid_CGameMovement_PlayerSolidMask);
-	shookid_CGameMovement_PlayerSolidMask = 0;
+	SH_REMOVE_HOOK_ID(CGameMovement::shookid_PlayerSolidMask);
+	CGameMovement::shookid_PlayerSolidMask = 0;
 
-	SH_REMOVE_HOOK_ID(shookid_CEnv_Blocker_ShouldCollide);
-	shookid_CEnv_Blocker_ShouldCollide = 0;
+	SH_REMOVE_HOOK_ID(CEnv_Blocker::shookid_ShouldCollide);
+	CEnv_Blocker::shookid_ShouldCollide = 0;
 
-	SH_REMOVE_HOOK_ID(shookid_CEnvPhysicsBlocker_ShouldCollide);
-	shookid_CEnvPhysicsBlocker_ShouldCollide = 0;
+	SH_REMOVE_HOOK_ID(CEnvPhysicsBlocker::shookid_ShouldCollide);
+	CEnvPhysicsBlocker::shookid_ShouldCollide = 0;
 }
 
 void CTeamCollision::SDK_OnAllLoaded()
 {
 	SM_GET_LATE_IFACE(BINTOOLS, bintools);
+	if (bintools == NULL) {
+		return;
+	}
 
 	SourceMod::PassInfo params[] = {
 #if SMINTERFACE_BINTOOLS_VERSION == 4
@@ -261,8 +250,8 @@ void CTeamCollision::SDK_OnAllLoaded()
 		const char* className;
 		int& hookId;
 	} s_entities[] = {
-		{ "env_player_blocker", shookid_CEnv_Blocker_ShouldCollide },
-		{ "env_physics_blocker", shookid_CEnvPhysicsBlocker_ShouldCollide },
+		{ "env_player_blocker", CEnv_Blocker::shookid_ShouldCollide },
+		{ "env_physics_blocker", CEnvPhysicsBlocker::shookid_ShouldCollide },
 	};
 
 	for (auto&& el : s_entities) {
@@ -275,13 +264,13 @@ void CTeamCollision::SDK_OnAllLoaded()
 
 		el.hookId = SH_ADD_MANUALVPHOOK(CBaseEntity_ShouldCollide, pEntity, SH_MEMBER(this, &CTeamCollision::Handler_CEnvBlocker_ShouldCollide), false);
 		
-		edict_t* pEdict = gameents->BaseEntityToEdict(pEntity);
+		edict_t* pEdict = pEntity->edict();
 		if (pEdict != NULL) {
 			engine->RemoveEdict(pEdict);
 		}
 	}
 
-	shookid_CGameMovement_PlayerSolidMask = SH_ADD_MANUALHOOK(CGameMovement_PlayerSolidMask, g_pGameMovement, SH_MEMBER(this, &CTeamCollision::Handler_CTerrorGameMovement_PlayerSolidMask), true);
+	CGameMovement::shookid_PlayerSolidMask = SH_ADD_MANUALHOOK(CGameMovement_PlayerSolidMask, g_pGameMovement, SH_MEMBER(this, &CTeamCollision::Handler_CTerrorGameMovement_PlayerSolidMask), true);
 
 	playerhelpers->AddClientListener(this);
 
