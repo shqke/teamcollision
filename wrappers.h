@@ -2,14 +2,10 @@
 #define _INCLUDE_WRAPPERS_H_
 
 #include "smsdk_ext.h"
+
 #include <extensions/IBinTools.h>
 
-// iclientrenderable.h (included in toolframework/itoolentity.h) has explicit NULL-dereference in CDefaultClientRenderable::GetRefEHandle
-// Don't need to add compiler option -Wnull-dereference if can just ignore this file alone
-#define ICLIENTRENDERABLE_H
-class IClientRenderable;
-typedef unsigned short ClientShadowHandle_t;
-#include <toolframework/itoolentity.h>
+class CDetour;
 
 extern IServerGameEnts* gameents;
 
@@ -17,11 +13,19 @@ class CBaseEntity :
 	public IServerEntity
 {
 public:
-	static int vtblindex_ShouldCollide;
-
 	edict_t* edict()
 	{
 		return gameents->BaseEntityToEdict(this);
+	}
+
+	int entindex()
+	{
+		return gamehelpers->EntityToBCompatRef(this);
+	}
+
+	const char* GetClassName()
+	{
+		return edict()->GetClassName();
 	}
 };
 
@@ -29,14 +33,18 @@ class CEnv_Blocker :
 	public CBaseEntity
 {
 public:
-	static int shookid_ShouldCollide;
+	static void* pfn_ShouldCollide;
+
+	static CDetour* detour_ShouldCollide;
 };
 
 class CEnvPhysicsBlocker :
 	public CBaseEntity
 {
 public:
-	static int shookid_ShouldCollide;
+	static void* pfn_ShouldCollide;
+
+	static CDetour* detour_ShouldCollide;
 };
 
 class CBasePlayer :

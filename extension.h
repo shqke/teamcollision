@@ -2,11 +2,12 @@
 #define _INCLUDE_EXTENSION_PROPER_H_
 
 #include "smsdk_ext.h"
-#include "wrappers.h"
 
 #include <sourcehook.h>
 #include <extensions/IBinTools.h>
 #include <amtl/am-string.h>
+
+class CBasePlayer;
 
 class CTeamCollision :
 	public SDKExtension,
@@ -15,10 +16,9 @@ class CTeamCollision :
 public: // SourceHook callbacks
 	unsigned int Handler_CTerrorPlayer_PlayerSolidMask(bool brushOnly);
 	unsigned int Handler_CTerrorGameMovement_PlayerSolidMask(bool brushOnly, CBasePlayer* testPlayer);
-	bool Handler_CEnvBlocker_ShouldCollide(int collisionGroup, int contentsMask);
 
 protected:
-	bool SetupFromGameConfigs(char* error, int maxlength);
+	bool SetupFromGameConfig(IGameConfig* gc, char* error, int maxlength);
 
 public:
 	/**

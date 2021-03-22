@@ -3,8 +3,8 @@
 
 #define SMEXT_CONF_NAME			"[L4D2] Team Collision"
 #define SMEXT_CONF_DESCRIPTION	"Improves collision rules between players of different teams"
-#define SMEXT_CONF_VERSION		"1.4"
-#define SMEXT_CONF_AUTHOR		"shqke"
+#define SMEXT_CONF_VERSION		"1.5"
+#define SMEXT_CONF_AUTHOR		"Evgeniy \"shqke\" Kazakov"
 #define SMEXT_CONF_URL			"https://github.com/shqke/teamcollision"
 #define SMEXT_CONF_LOGTAG		"teamcollision"
 #define SMEXT_CONF_LICENSE		"GPL"

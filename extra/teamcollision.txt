@@ -16,5 +16,24 @@
 				"windows"	"17"
 			}
 		}
+		
+		"Signatures"
+		{
+			"CEnv_Blocker::ShouldCollide"
+			{
+				"library"	"server"
+				"linux"		"@_ZNK12CEnv_Blocker13ShouldCollideEii"
+				// 55 8B EC 83 7D 08 08 75 ? 8B 81 30 04 00 00
+				"windows"	"\x55\x8B\xEC\x83\x7D\x08\x08\x75\x2A\x8B\x81\x30\x04\x00\x00"
+			}
+
+			"CEnvPhysicsBlocker::ShouldCollide"
+			{
+				"library"	"server"
+				"linux"		"@_ZNK18CEnvPhysicsBlocker13ShouldCollideEii"
+				// 55 8B EC 83 7D 08 08 75 ? 8B 81 44 04 00 00
+				"windows"	"\x55\x8B\xEC\x83\x7D\x08\x08\x75\x2A\x8B\x81\x44\x04\x00\x00"
+			}
+		}
 	}
 }
