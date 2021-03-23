@@ -13,7 +13,7 @@
 			"CGameMovement::PlayerSolidMask"
 			{
 				"linux"		"16"
-				"windows"	"17"
+				"windows"	"15" // 17 points to CGameMovement::CalcRoll
 			}
 		}
 		
