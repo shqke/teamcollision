@@ -9,8 +9,9 @@
 
 class CBasePlayer;
 
-class CTeamCollision :
+class CExtension :
 	public SDKExtension,
+	public IConCommandBaseAccessor,
 	public IClientListener
 {
 public: // SourceHook callbacks
@@ -39,6 +40,11 @@ public:
 	 * @brief Called when the server is activated.
 	 */
 	void OnServerActivated(int max_clients) override;
+
+public: // IConCommandBaseAccessor
+	// Flags is a combination of FCVAR flags in cvar.h.
+	// hOut is filled in with a handle to the variable.
+	bool RegisterConCommandBase(ConCommandBase* pVar) override;
 
 public:
 	/**

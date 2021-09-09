@@ -3,8 +3,8 @@
 
 #include <CDetour/detours.h>
 
-CTeamCollision g_TeamCollision;
-SMEXT_LINK(&g_TeamCollision);
+CExtension g_Extension;
+SMEXT_LINK(&g_Extension);
 
 SH_DECL_MANUALHOOK1(CBasePlayer_PlayerSolidMask, 0, 0, 0, unsigned int, bool);
 SH_DECL_MANUALHOOK2(CGameMovement_PlayerSolidMask, 0, 0, 0, unsigned int, bool, CBasePlayer*);
@@ -25,9 +25,15 @@ CDetour* CEnv_Blocker::detour_ShouldCollide = 0;
 CDetour* CEnvPhysicsBlocker::detour_ShouldCollide = NULL;
 int CGameMovement::shookid_PlayerSolidMask = 0;
 
+ConVar z_charge_carry_assume_collision("z_charge_carry_assume_collision", "1", 0, "Enforce charger to collide with what a charged victim would collide");
+
 FORCEINLINE void Handle_ShouldCollide(int& contentsMask, int collisionGroup)
 {
 	if (collisionGroup != COLLISION_GROUP_PLAYER_MOVEMENT) {
+		return;
+	}
+
+	if (!z_charge_carry_assume_collision.GetBool()) {
 		return;
 	}
 
@@ -54,16 +60,21 @@ DETOUR_DECL_MEMBER2(Handler_CEnvPhysicsBlocker_ShouldCollide, void, int, collisi
 	return DETOUR_MEMBER_CALL(Handler_CEnvPhysicsBlocker_ShouldCollide)(collisionGroup, contentsMask);
 }
 
-unsigned int CTeamCollision::Handler_CTerrorPlayer_PlayerSolidMask(bool brushOnly)
+unsigned int CExtension::Handler_CTerrorPlayer_PlayerSolidMask(bool brushOnly)
 {
 	CTerrorPlayer* _this = META_IFACEPTR(CTerrorPlayer);
 
 	CTerrorPlayer* pVictim = _this->GetCarryVictim();
-	if (pVictim == NULL) {
-		pVictim = _this->GetJockeyAttacker();
-	}
+	// BUG: doesnt work well for victims inside a clip
+	//if (pVictim == NULL) {
+	//	pVictim = _this->GetJockeyAttacker();
+	//}
 
 	if (pVictim == NULL) {
+		RETURN_META_VALUE(MRES_IGNORED, 0);
+	}
+
+	if (!z_charge_carry_assume_collision.GetBool()) {
 		RETURN_META_VALUE(MRES_IGNORED, 0);
 	}
 
@@ -71,7 +82,7 @@ unsigned int CTeamCollision::Handler_CTerrorPlayer_PlayerSolidMask(bool brushOnl
 	RETURN_META_VALUE(MRES_OVERRIDE, META_RESULT_ORIG_RET(unsigned int) | pVictim->PlayerSolidMask(brushOnly));
 }
 
-unsigned int CTeamCollision::Handler_CTerrorGameMovement_PlayerSolidMask(bool brushOnly, CBasePlayer* testPlayer)
+unsigned int CExtension::Handler_CTerrorGameMovement_PlayerSolidMask(bool brushOnly, CBasePlayer* testPlayer)
 {
 	if (testPlayer == NULL) {
 		testPlayer = META_IFACEPTR(CGameMovement)->player;
@@ -84,7 +95,7 @@ unsigned int CTeamCollision::Handler_CTerrorGameMovement_PlayerSolidMask(bool br
 	RETURN_META_VALUE(MRES_OVERRIDE, META_RESULT_ORIG_RET(unsigned int) | testPlayer->PlayerSolidMask(brushOnly));
 }
 
-bool CTeamCollision::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlength)
+bool CExtension::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlength)
 {
 	static const struct {
 		const char* key;
@@ -127,27 +138,27 @@ bool CTeamCollision::SetupFromGameConfig(IGameConfig* gc, char* error, int maxle
 	return true;
 }
 
-void CTeamCollision::OnClientPutInServer(int client)
+void CExtension::OnClientPutInServer(int client)
 {
 	CBasePlayer* pPlayer = UTIL_PlayerByIndex(client);
 	if (pPlayer == NULL) {
 		return;
 	}
 
-	SH_ADD_MANUALHOOK(CBasePlayer_PlayerSolidMask, pPlayer, SH_MEMBER(this, &CTeamCollision::Handler_CTerrorPlayer_PlayerSolidMask), true);
+	SH_ADD_MANUALHOOK(CBasePlayer_PlayerSolidMask, pPlayer, SH_MEMBER(this, &CExtension::Handler_CTerrorPlayer_PlayerSolidMask), true);
 }
 
-void CTeamCollision::OnClientDisconnecting(int client)
+void CExtension::OnClientDisconnecting(int client)
 {
 	CBasePlayer* pPlayer = UTIL_PlayerByIndex(client);
 	if (pPlayer == NULL) {
 		return;
 	}
 
-	SH_REMOVE_MANUALHOOK(CBasePlayer_PlayerSolidMask, pPlayer, SH_MEMBER(this, &CTeamCollision::Handler_CTerrorPlayer_PlayerSolidMask), true);
+	SH_REMOVE_MANUALHOOK(CBasePlayer_PlayerSolidMask, pPlayer, SH_MEMBER(this, &CExtension::Handler_CTerrorPlayer_PlayerSolidMask), true);
 }
 
-void CTeamCollision::OnServerActivated(int maxClients)
+void CExtension::OnServerActivated(int maxClients)
 {
 	for (int i = 1; i <= maxClients; i++) {
 		IGamePlayer* pGamePlayer = playerhelpers->GetGamePlayer(i);
@@ -163,7 +174,13 @@ void CTeamCollision::OnServerActivated(int maxClients)
 	}
 }
 
-bool CTeamCollision::SDK_OnLoad(char* error, size_t maxlength, bool late)
+bool CExtension::RegisterConCommandBase(ConCommandBase* pVar)
+{
+	// Notify metamod of ownership
+	return META_REGCVAR(pVar);
+}
+
+bool CExtension::SDK_OnLoad(char* error, size_t maxlength, bool late)
 {
 	sm_sendprop_info_t info;
 	if (!gamehelpers->FindSendPropInfo("CBasePlayer", "m_fFlags", &info)) {
@@ -227,10 +244,12 @@ bool CTeamCollision::SDK_OnLoad(char* error, size_t maxlength, bool late)
 
 	sharesys->AddDependency(myself, "bintools.ext", true, true);
 
+	ConVar_Register(0, this);
+
 	return true;
 }
 
-void CTeamCollision::SDK_OnUnload()
+void CExtension::SDK_OnUnload()
 {
 	if (CBasePlayer::vcall_PlayerSolidMask != NULL) {
 		CBasePlayer::vcall_PlayerSolidMask->Destroy();
@@ -261,13 +280,15 @@ void CTeamCollision::SDK_OnUnload()
 		OnClientDisconnecting(i);
 	}
 
+	ConVar_Unregister();
+
 	playerhelpers->RemoveClientListener(this);
 
 	SH_REMOVE_HOOK_ID(CGameMovement::shookid_PlayerSolidMask);
 	CGameMovement::shookid_PlayerSolidMask = 0;
 }
 
-void CTeamCollision::SDK_OnAllLoaded()
+void CExtension::SDK_OnAllLoaded()
 {
 	SM_GET_LATE_IFACE(BINTOOLS, bintools);
 	if (bintools == NULL) {
@@ -292,7 +313,7 @@ void CTeamCollision::SDK_OnAllLoaded()
 		return;
 	}
 
-	CGameMovement::shookid_PlayerSolidMask = SH_ADD_MANUALHOOK(CGameMovement_PlayerSolidMask, g_pGameMovement, SH_MEMBER(this, &CTeamCollision::Handler_CTerrorGameMovement_PlayerSolidMask), true);
+	CGameMovement::shookid_PlayerSolidMask = SH_ADD_MANUALHOOK(CGameMovement_PlayerSolidMask, g_pGameMovement, SH_MEMBER(this, &CExtension::Handler_CTerrorGameMovement_PlayerSolidMask), true);
 
 	CEnv_Blocker::detour_ShouldCollide->EnableDetour();
 	CEnvPhysicsBlocker::detour_ShouldCollide->EnableDetour();
@@ -304,24 +325,24 @@ void CTeamCollision::SDK_OnAllLoaded()
 	}
 }
 
-bool CTeamCollision::QueryInterfaceDrop(SMInterface* pInterface)
+bool CExtension::QueryInterfaceDrop(SMInterface* pInterface)
 {
 	return pInterface != bintools;
 }
 
-void CTeamCollision::NotifyInterfaceDrop(SMInterface* pInterface)
+void CExtension::NotifyInterfaceDrop(SMInterface* pInterface)
 {
 	SDK_OnUnload();
 }
 
-bool CTeamCollision::QueryRunning(char* error, size_t maxlength)
+bool CExtension::QueryRunning(char* error, size_t maxlength)
 {
 	SM_CHECK_IFACE(BINTOOLS, bintools);
 
 	return true;
 }
 
-bool CTeamCollision::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, bool late)
+bool CExtension::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, bool late)
 {
 	GET_V_IFACE_CURRENT(GetServerFactory, g_pGameMovement, CGameMovement, INTERFACENAME_GAMEMOVEMENT);
 	GET_V_IFACE_CURRENT(GetServerFactory, gameents, IServerGameEnts, INTERFACEVERSION_SERVERGAMEENTS);
