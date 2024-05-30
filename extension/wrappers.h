@@ -1,8 +1,6 @@
 #ifndef _INCLUDE_WRAPPERS_H_
 #define _INCLUDE_WRAPPERS_H_
 
-#include "smsdk_ext.h"
-
 #include <extensions/IBinTools.h>
 
 class CDetour;
